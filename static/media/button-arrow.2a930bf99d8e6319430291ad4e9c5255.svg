@@ -1,0 +1,10 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 218.87 218.87">
+  <defs>
+    <style>
+      .arrow-line{fill:none;stroke:#221f20;stroke-miterlimit:10;stroke-width:2.83px;}
+    </style>
+  </defs>
+  <line class="arrow-line" x1="91.4" y1="127.91" x2="126.22" y2="93.85"/>
+  <path class="arrow-line" d="M125.12,119.07a20,20,0,0,1,2.19-26.57"/>
+  <path class="arrow-line" d="M101,95.59a20,20,0,0,0,26.48-3.19"/>
+</svg>

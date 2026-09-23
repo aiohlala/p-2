@@ -1,0 +1,393 @@
+/* POWER2 Solana dApp Stylesheet */
+:root {
+  --p2-bg: rgba(13, 17, 23, 0.85);
+  --p2-card: rgba(22, 27, 34, 0.88);
+  --p2-border: rgba(255, 255, 255, 0.12);
+  --p2-border-hover: rgba(121, 40, 202, 0.6);
+  --p2-text: #FFFFFF;
+  --p2-text-dim: #8B949E;
+  --p2-accent: #7928CA;
+  --p2-accent-2: #FF0080;
+  --p2-cyan: #00F2FE;
+  --p2-green: #00F5A0;
+  --p2-gradient: linear-gradient(135deg, #7928CA 0%, #FF0080 100%);
+  --p2-glow: 0 0 20px rgba(121, 40, 202, 0.4);
+}
+
+/* Header Wallet Button */
+.p2-wallet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--p2-gradient);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(121, 40, 202, 0.35);
+  z-index: 1000;
+  position: relative;
+  text-decoration: none;
+}
+
+.p2-wallet-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(255, 0, 128, 0.45);
+}
+
+.p2-wallet-btn .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00F5A0;
+  box-shadow: 0 0 8px #00F5A0;
+}
+
+/* Floating dApp Launcher Pill */
+.p2-hud-launcher {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--p2-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--p2-border);
+  border-radius: 40px;
+  padding: 10px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(121, 40, 202, 0.2);
+  cursor: pointer;
+  z-index: 9999;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.p2-hud-launcher:hover {
+  border-color: var(--p2-cyan);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 242, 254, 0.3);
+  transform: translateY(-2px);
+}
+
+.p2-hud-launcher .badge {
+  background: rgba(0, 242, 254, 0.15);
+  color: var(--p2-cyan);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+/* Modal Overlay */
+.p2-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+  padding: 16px;
+}
+
+.p2-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Modal Content Card */
+.p2-card {
+  background: var(--p2-card);
+  border: 1px solid var(--p2-border);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(121, 40, 202, 0.25);
+  overflow: hidden;
+  transform: scale(0.95);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: var(--p2-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+}
+
+.p2-modal-overlay.active .p2-card {
+  transform: scale(1);
+}
+
+/* Modal Header */
+.p2-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--p2-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.p2-card-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.5px;
+}
+
+.p2-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--p2-text-dim);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.p2-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+/* Modal Body */
+.p2-card-body {
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Stats Grid */
+.p2-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.p2-stat-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--p2-border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.p2-stat-box.highlight {
+  background: linear-gradient(135deg, rgba(121, 40, 202, 0.15) 0%, rgba(255, 0, 128, 0.15) 100%);
+  border-color: rgba(255, 0, 128, 0.3);
+}
+
+.p2-stat-label {
+  font-size: 12px;
+  color: var(--p2-text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.p2-stat-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.p2-stat-val.gradient {
+  background: var(--p2-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Action Area */
+.p2-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.p2-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.p2-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--p2-border);
+  border-radius: 14px;
+  padding: 14px 70px 14px 16px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.p2-input:focus {
+  border-color: var(--p2-cyan);
+}
+
+.p2-input-token {
+  position: absolute;
+  right: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p2-cyan);
+  pointer-events: none;
+}
+
+.p2-btn-row {
+  display: flex;
+  gap: 10px;
+}
+
+.p2-btn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.p2-btn-primary {
+  background: var(--p2-gradient);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(121, 40, 202, 0.3);
+}
+
+.p2-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 0, 128, 0.4);
+}
+
+.p2-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid var(--p2-border);
+}
+
+.p2-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.p2-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Security Notice Pill */
+.p2-security-badge {
+  background: rgba(0, 245, 160, 0.1);
+  border: 1px solid rgba(0, 245, 160, 0.25);
+  color: #00F5A0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Devnet Controls Box */
+.p2-devnet-box {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--p2-border);
+}
+
+.p2-devnet-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFB800;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.p2-devnet-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.p2-devnet-btn {
+  background: rgba(255, 184, 0, 0.12);
+  color: #FFB800;
+  border: 1px solid rgba(255, 184, 0, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p2-devnet-btn:hover:not(:disabled) {
+  background: rgba(255, 184, 0, 0.22);
+}
+
+/* Toast Notifications */
+.p2-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(22, 27, 34, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--p2-border);
+  color: #fff;
+  padding: 14px 24px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 100000;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.p2-toast.active {
+  transform: translateX(-50%) translateY(0);
+}
+
+.p2-toast.success {
+  border-color: var(--p2-green);
+}
+
+.p2-toast.error {
+  border-color: #FF4D4D;
+}

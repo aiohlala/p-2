@@ -1,0 +1,28 @@
+# Global security headers
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Access-Control-Allow-Origin: *
+
+# WebAssembly MIME type and long cache
+/assets/rhino3dm/*.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+# Rhino 3D Models
+/assets/3d/*.3dm
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+# Static bundle and media caching
+/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML entry point - must revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
