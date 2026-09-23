@@ -15,6 +15,7 @@
     (function() {
       var isSubpath = window.location.pathname.startsWith('/p-2');
       var prefix = isSubpath ? '/p-2' : '';
+      window.__POWER2_BASE_PATH__ = isSubpath ? '/p-2/' : '/';
       window.__webpack_public_path__ = isSubpath ? '/p-2/' : '/';
       if (prefix) {
         var origFetch = window.fetch;
@@ -42,18 +43,18 @@
     })();
   </script>
 
-  <!-- Original Styles & dApp Styles -->
+  <!-- Original 3D Styles -->
   <link href="./static/css/main.1707a6ef.css" rel="stylesheet">
-  <link href="./static/css/dapp-adapter.css" rel="stylesheet">
   
-  <!-- Solana Web3 Library -->
-  <script src="./static/js/solana-web3.min.js"></script>
+  <!-- Landing Page Custom Styles (Language Switcher & Use Power2 CTA) -->
+  <link href="./static/css/landing-extras.css" rel="stylesheet">
   
+  <!-- i18n & Landing Initializer -->
+  <script src="./static/js/i18n.js"></script>
+  <script defer="defer" src="./static/js/landing-init.js"></script>
+
   <!-- Original 3D Bundle -->
   <script defer="defer" src="./static/js/main.46527fe2.js"></script>
-  
-  <!-- POWER2 Web3 dApp Controller -->
-  <script defer="defer" src="./static/js/dapp-adapter.js"></script>
 </head>
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>

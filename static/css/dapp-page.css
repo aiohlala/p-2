@@ -1,0 +1,919 @@
+/* ==========================================================================
+   POWER2 Dedicated dApp Stylesheet (Aave-inspired DeFi Interface)
+   ========================================================================== */
+
+:root {
+  --p2-bg: #0B0E14;
+  --p2-bg-secondary: #121721;
+  --p2-card-bg: rgba(22, 27, 38, 0.75);
+  --p2-card-border: rgba(255, 255, 255, 0.08);
+  --p2-card-border-hover: rgba(255, 255, 255, 0.16);
+  --p2-text-primary: #F0F6FC;
+  --p2-text-secondary: #8B949E;
+  --p2-text-muted: #6E7681;
+  --p2-accent-purple: #7928CA;
+  --p2-accent-pink: #FF0080;
+  --p2-accent-cyan: #00F0FF;
+  --p2-accent-green: #00F5A0;
+  --p2-accent-gradient: linear-gradient(135deg, #7928CA 0%, #FF0080 100%);
+  --p2-green-gradient: linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%);
+  --p2-glow: 0 8px 32px rgba(121, 40, 202, 0.25);
+  --p2-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body.p2-dapp-body {
+  background-color: var(--p2-bg);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(121, 40, 202, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 85% 25%, rgba(255, 0, 128, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(0, 240, 255, 0.08) 0%, transparent 50%);
+  background-attachment: fixed;
+  color: var(--p2-text-primary);
+  font-family: var(--p2-font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------------------
+   Top Navigation Header
+   -------------------------------------------------------------------------- */
+.p2-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(11, 14, 20, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--p2-card-border);
+  padding: 0 28px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.p2-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.p2-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--p2-text-primary);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.5px;
+}
+
+.p2-brand-logo {
+  font-size: 24px;
+  filter: drop-shadow(0 2px 8px rgba(121, 40, 202, 0.5));
+}
+
+.p2-brand-badge {
+  background: rgba(121, 40, 202, 0.2);
+  color: #D2A8FF;
+  border: 1px solid rgba(121, 40, 202, 0.4);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.p2-nav-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--p2-text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--p2-card-border);
+}
+
+.p2-nav-back:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--p2-card-border-hover);
+}
+
+.p2-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.p2-cluster-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 245, 160, 0.1);
+  border: 1px solid rgba(0, 245, 160, 0.25);
+  color: #00F5A0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 9999px;
+}
+
+.p2-pulse-dot {
+  width: 7px;
+  height: 7px;
+  background-color: #00F5A0;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00F5A0;
+  animation: p2-pulse 2s infinite;
+}
+
+@keyframes p2-pulse {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.7; }
+}
+
+/* Language Switcher */
+.p2-lang-pill {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--p2-card-border);
+  border-radius: 9999px;
+  padding: 3px;
+}
+
+.p2-lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--p2-text-secondary);
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-lang-btn:hover {
+  color: #FFFFFF;
+}
+
+.p2-lang-btn.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Connect Wallet Button */
+.p2-wallet-btn {
+  background: var(--p2-accent-gradient);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(121, 40, 202, 0.35);
+  transition: all 0.2s ease;
+}
+
+.p2-wallet-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 0, 128, 0.5);
+}
+
+.p2-wallet-connected {
+  background: rgba(22, 27, 38, 0.9);
+  border: 1px solid rgba(0, 245, 160, 0.3);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.p2-disconnect-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--p2-text-secondary);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-disconnect-btn:hover {
+  background: rgba(248, 81, 73, 0.2);
+  color: #FF7B72;
+}
+
+/* --------------------------------------------------------------------------
+   App Container & Hero
+   -------------------------------------------------------------------------- */
+.p2-app-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+  flex: 1;
+}
+
+.p2-hero-banner {
+  margin-bottom: 28px;
+}
+
+.p2-hero-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  margin-bottom: 6px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #C9D1D9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.p2-hero-desc {
+  font-size: 14px;
+  color: var(--p2-text-secondary);
+  max-width: 680px;
+}
+
+/* --------------------------------------------------------------------------
+   Stats Grid (4 Key Metric Cards)
+   -------------------------------------------------------------------------- */
+.p2-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.p2-stat-card {
+  background: var(--p2-card-bg);
+  border: 1px solid var(--p2-card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 18px 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.p2-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.p2-stat-card:hover {
+  border-color: var(--p2-card-border-hover);
+  transform: translateY(-2px);
+}
+
+.p2-stat-card:nth-child(1):hover::before { background: #00F5A0; }
+.p2-stat-card:nth-child(2):hover::before { background: #00F0FF; }
+.p2-stat-card:nth-child(3):hover::before { background: #FF0080; }
+.p2-stat-card:nth-child(4):hover::before { background: #7928CA; }
+
+.p2-stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p2-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.p2-stat-value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--p2-text-primary);
+}
+
+.p2-stat-value.highlight-crypto {
+  background: linear-gradient(135deg, #FF0080 0%, #7928CA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.p2-stat-value.highlight-nft {
+  background: linear-gradient(135deg, #00F0FF 0%, #00F5A0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.p2-stat-sub {
+  font-size: 12px;
+  color: var(--p2-text-muted);
+  margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   Dashboard Two-Column Grid
+   -------------------------------------------------------------------------- */
+.p2-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.p2-panel {
+  background: var(--p2-card-bg);
+  border: 1px solid var(--p2-card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.p2-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.p2-panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--p2-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Left Column: Position Card Elements */
+.p2-position-box {
+  background: rgba(11, 14, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.p2-position-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.p2-position-label {
+  font-size: 13px;
+  color: var(--p2-text-secondary);
+}
+
+.p2-position-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.p2-guarantee-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 245, 160, 0.12);
+  color: #00F5A0;
+  border: 1px solid rgba(0, 245, 160, 0.3);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+/* Odds Progress Bar */
+.p2-odds-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.p2-odds-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.p2-odds-pct {
+  color: #00F0FF;
+}
+
+.p2-odds-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.p2-odds-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #7928CA 0%, #00F0FF 100%);
+  border-radius: 9999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Unclaimed Prize Banner */
+.p2-claim-box {
+  background: rgba(255, 0, 128, 0.08);
+  border: 1px solid rgba(255, 0, 128, 0.25);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.p2-claim-info h4 {
+  font-size: 13px;
+  color: var(--p2-text-secondary);
+  font-weight: 600;
+}
+
+.p2-claim-amount {
+  font-size: 20px;
+  font-weight: 800;
+  color: #FF0080;
+}
+
+.p2-claim-btn {
+  background: linear-gradient(135deg, #FF0080 0%, #7928CA 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-claim-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+/* Security Feature Badges */
+.p2-security-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.p2-security-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--p2-text-secondary);
+  line-height: 1.4;
+}
+
+.p2-security-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   Right Column: Action Center (Deposit / Withdraw)
+   -------------------------------------------------------------------------- */
+.p2-action-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(11, 14, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.p2-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--p2-text-secondary);
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-tab-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+.p2-input-wrapper {
+  background: rgba(11, 14, 20, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.p2-input-wrapper:focus-within {
+  border-color: #00F0FF;
+  box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.15);
+}
+
+.p2-input-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--p2-text-secondary);
+}
+
+.p2-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.p2-amount-input {
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  font-size: 24px;
+  font-weight: 700;
+  width: 100%;
+  outline: none;
+}
+
+.p2-amount-input::placeholder {
+  color: var(--p2-text-muted);
+}
+
+.p2-token-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Quick Amount Pills */
+.p2-quick-pills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.p2-pill-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--p2-text-secondary);
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Odds Calculator Preview */
+.p2-calc-preview {
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px dashed rgba(0, 240, 255, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #80E9FF;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Action Primary Button */
+.p2-action-submit-btn {
+  background: var(--p2-accent-gradient);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 18px rgba(121, 40, 202, 0.35);
+  margin-bottom: 12px;
+}
+
+.p2-action-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(255, 0, 128, 0.5);
+}
+
+.p2-action-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.p2-action-note {
+  font-size: 12px;
+  color: var(--p2-text-muted);
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Devnet Lab & Tools Panel
+   -------------------------------------------------------------------------- */
+.p2-lab-panel {
+  background: rgba(18, 23, 33, 0.6);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-top: 10px;
+}
+
+.p2-lab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.p2-lab-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #D2A8FF;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.p2-lab-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.p2-lab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--p2-text-primary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.p2-lab-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.p2-lab-links {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+}
+
+.p2-lab-link {
+  color: var(--p2-text-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.p2-lab-link:hover {
+  color: #00F0FF;
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   Modal: Wallet Selector
+   -------------------------------------------------------------------------- */
+.p2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.p2-modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.p2-modal-card {
+  background: #161B26;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 28px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  transform: scale(0.95);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.p2-modal-backdrop.open .p2-modal-card {
+  transform: scale(1);
+}
+
+.p2-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.p2-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.p2-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--p2-text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.p2-modal-close:hover {
+  color: #FFFFFF;
+}
+
+.p2-wallet-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.p2-wallet-choice-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-wallet-choice-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(2px);
+}
+
+.p2-wallet-choice-btn .badge {
+  font-size: 11px;
+  color: var(--p2-text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+/* --------------------------------------------------------------------------
+   Toast / Notification Notification
+   -------------------------------------------------------------------------- */
+.p2-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  background: #161B26;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  color: #FFFFFF;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.p2-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.p2-toast.success { border-color: rgba(0, 245, 160, 0.5); }
+.p2-toast.error { border-color: rgba(248, 81, 73, 0.5); }
+
+/* --------------------------------------------------------------------------
+   Responsive Design
+   -------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .p2-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .p2-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .p2-navbar {
+    padding: 0 16px;
+    height: 60px;
+  }
+  .p2-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .p2-app-container {
+    padding: 20px 16px 40px;
+  }
+  .p2-cluster-pill {
+    display: none;
+  }
+}

@@ -1,0 +1,107 @@
+/* Landing Page Extra Styles (Language Switcher & Use Power2 CTA) */
+
+.p2-landing-action-bar {
+  position: fixed;
+  top: 74px;
+  right: 36px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Language Switcher Pill */
+.p2-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(22, 27, 34, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 3px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.p2-lang-btn {
+  background: transparent;
+  border: none;
+  color: #8B949E;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-lang-btn:hover {
+  color: #FFFFFF;
+}
+
+.p2-lang-btn.active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+
+/* Use Power2 Primary Button */
+.p2-use-app-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #7928CA 0%, #FF0080 100%);
+  color: #FFFFFF !important;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  box-shadow: 0 4px 20px rgba(121, 40, 202, 0.45);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.p2-use-app-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 30px rgba(255, 0, 128, 0.6);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.p2-use-app-btn .icon {
+  font-size: 16px;
+}
+
+.p2-use-app-btn .arrow {
+  transition: transform 0.2s ease;
+}
+
+.p2-use-app-btn:hover .arrow {
+  transform: translateX(3px);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .p2-landing-action-bar {
+    top: 68px;
+    right: 16px;
+    gap: 8px;
+  }
+  .p2-use-app-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}
