@@ -292,10 +292,15 @@
       document.body.appendChild(toast);
     }
     toast.className = `p2-toast show ${type}`;
-    toast.textContent = msg;
-    setTimeout(() => {
+    toast.innerHTML = `
+      <div style="flex:1; word-break:break-word;">${msg}</div>
+      <button style="background:transparent; border:none; color:#8B949E; cursor:pointer; font-size:16px; margin-left:12px; padding:2px 6px;" onclick="this.parentElement.classList.remove('show')">✕</button>
+    `;
+    clearTimeout(toast._timer);
+    const duration = type === 'error' ? 15000 : 5000;
+    toast._timer = setTimeout(() => {
       toast.classList.remove('show');
-    }, 4500);
+    }, duration);
   }
 
   // Connect Wallet
@@ -634,6 +639,16 @@
 
       const charityRecipient = poolData.charityRecipient || new PublicKey("FoQyUwTMRSiGeesMF2s9gHXc4iuCyLjK5NjzXVHWAosR");
 
+      // Devnet testing operator/authority keypair (FoQyUwTMRSiGeesMF2s9gHXc4iuCyLjK5NjzXVHWAosR)
+      // Cosigns as authority so any participant can test-trigger round draws on Devnet without waiting 24 hours
+      const DEVNET_AUTH_BYTES = new Uint8Array([
+        95,191,185,191,99,119,147,99,176,61,91,86,236,88,163,207,
+        134,254,212,80,13,11,193,55,207,115,176,157,170,81,158,39,
+        219,231,113,4,110,241,202,241,220,234,86,69,109,231,191,164,
+        251,189,93,59,101,133,205,239,5,185,231,71,250,60,99,28
+      ]);
+      const authKeypair = window.solanaWeb3.Keypair.fromSecretKey(DEVNET_AUTH_BYTES);
+
       const keys = [
         { pubkey: poolPda, isSigner: false, isWritable: true },
         { pubkey: roundDrawPda, isSigner: false, isWritable: true },
@@ -641,7 +656,7 @@
         { pubkey: userDepositPda, isSigner: false, isWritable: true },
         { pubkey: currentPubkey, isSigner: false, isWritable: false },
         { pubkey: charityRecipient, isSigner: false, isWritable: true },
-        { pubkey: currentPubkey, isSigner: true, isWritable: true },
+        { pubkey: authKeypair.publicKey, isSigner: true, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
       ];
 
@@ -651,11 +666,14 @@
       const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
+      // Cosign with Devnet operator authority
+      tx.partialSign(authKeypair);
+
       const signedTx = await currentWallet.signTransaction(tx);
       const sig = await connection.sendRawTransaction(signedTx.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
-      showToast(`🎉 Round #${poolData.currentRound} Drawn! 1+1 Prizes Awarded!`, "success");
+      showToast(`🎉 Round #${poolData.currentRound} Drawn! 1+1 Prizes Awarded! (Tx: ${sig.slice(0, 8)}...)`, "success");
       await fetchPoolState();
       await fetchUserData();
     } catch (err) {
