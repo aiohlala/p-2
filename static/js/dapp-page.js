@@ -124,6 +124,9 @@
         poolData.totalDeposit = readUint64LE(data, 8 + 32 * 4);
         poolData.currentRound = Math.floor(readUint64LE(data, 8 + 32 * 4 + 8 * 2) * 1e9);
         poolData.accumulatedPrizes = readUint64LE(data, 8 + 32 * 4 + 8 * 5);
+        if (data.length >= 136) {
+          poolData.charityRecipient = new window.solanaWeb3.PublicKey(data.slice(104, 136));
+        }
       }
       renderStats();
     } catch (e) {
@@ -629,13 +632,15 @@
         programId
       );
 
+      const charityRecipient = poolData.charityRecipient || new PublicKey("FoQyUwTMRSiGeesMF2s9gHXc4iuCyLjK5NjzXVHWAosR");
+
       const keys = [
         { pubkey: poolPda, isSigner: false, isWritable: true },
         { pubkey: roundDrawPda, isSigner: false, isWritable: true },
         { pubkey: prizeVaultPda, isSigner: false, isWritable: true },
         { pubkey: userDepositPda, isSigner: false, isWritable: true },
         { pubkey: currentPubkey, isSigner: false, isWritable: false },
-        { pubkey: currentPubkey, isSigner: false, isWritable: true },
+        { pubkey: charityRecipient, isSigner: false, isWritable: true },
         { pubkey: currentPubkey, isSigner: true, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
       ];
