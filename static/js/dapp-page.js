@@ -23,7 +23,8 @@
     POOL: new TextEncoder().encode("power2-pool"),
     VAULT: new TextEncoder().encode("pool-vault"),
     PRIZE_VAULT: new TextEncoder().encode("prize-vault"),
-    USER_DEPOSIT: new TextEncoder().encode("user-deposit")
+    USER_DEPOSIT: new TextEncoder().encode("user-deposit"),
+    ROUND_DRAW: new TextEncoder().encode("round-draw")
   };
 
   // State Variables
@@ -38,58 +39,99 @@
   let walletSolBalance = 0;
 
   let poolData = {
-    totalDeposit: 40000000, // 0.040 SOL fallback
+    totalDeposit: 0.040, // in SOL
     currentRound: 2,
-    accumulatedPrizes: 0,
+    accumulatedPrizes: 0.0,
     isInitialized: true
   };
 
   let userDepositData = {
-    amount: 10000000, // 0.010 SOL default
-    effectiveAmount: 10000000,
-    unclaimedPrizes: 0,
+    amount: 0.010, // in SOL
+    effectiveAmount: 0.010,
+    unclaimedPrizes: 0.0,
     hasAccount: true
   };
 
   let activeTab = 'deposit'; // 'deposit' | 'withdraw'
 
+  // Encode 64-bit Little Endian
+  function encodeUint64LE(val) {
+    const buf = new Uint8Array(8);
+    let n = BigInt(val);
+    for (let i = 0; i < 8; i++) {
+      buf[i] = Number(n & 0xffn);
+      n >>= 8n;
+    }
+    return buf;
+  }
+
+  // Parse 64-bit Little Endian (returns value in SOL)
+  function readUint64LE(bytes, offset) {
+    if (!bytes || offset + 8 > bytes.length) return 0;
+    let res = 0n;
+    for (let i = 0; i < 8; i++) {
+      res += BigInt(bytes[offset + i]) << BigInt(8 * i);
+    }
+    return Number(res) / 1e9;
+  }
+
   // Initialize Web3 Connection and PDAs
   function initWeb3() {
     if (typeof window.solanaWeb3 === 'undefined') {
-      setTimeout(initWeb3, 150);
+      setTimeout(initWeb3, 100);
       return;
     }
 
-    try {
-      connection = new window.solanaWeb3.Connection(DEVNET_RPC, "confirmed");
-      programId = new window.solanaWeb3.PublicKey(PROGRAM_ID_STR);
+    // Polyfill Buffer in browser if missing
+    if (typeof window.Buffer === 'undefined' && window.solanaWeb3 && window.solanaWeb3.Buffer) {
+      window.Buffer = window.solanaWeb3.Buffer;
+    }
 
-      poolPda = window.solanaWeb3.PublicKey.findProgramAddressSync([SEEDS.POOL], programId)[0];
-      vaultPda = window.solanaWeb3.PublicKey.findProgramAddressSync([SEEDS.VAULT], programId)[0];
-      prizeVaultPda = window.solanaWeb3.PublicKey.findProgramAddressSync([SEEDS.PRIZE_VAULT], programId)[0];
+    try {
+      const { Connection, PublicKey } = window.solanaWeb3;
+      connection = new Connection(DEVNET_RPC, "confirmed");
+      programId = new PublicKey(PROGRAM_ID_STR);
+
+      // Derive exact PDAs matching Anchor smart contract
+      [poolPda] = PublicKey.findProgramAddressSync([SEEDS.POOL], programId);
+      [vaultPda] = PublicKey.findProgramAddressSync([SEEDS.VAULT, poolPda.toBuffer()], programId);
+      [prizeVaultPda] = PublicKey.findProgramAddressSync([SEEDS.PRIZE_VAULT, poolPda.toBuffer()], programId);
 
       // Refresh on-chain pool status
-      fetchPoolOnChain();
+      fetchPoolState();
+      setInterval(fetchPoolState, 10000);
     } catch (err) {
       console.warn("Web3 Init notice:", err);
     }
   }
 
-  // Fetch Pool State from Devnet
-  async function fetchPoolOnChain() {
+  // Fetch Pool State from Devnet (Anchor struct offsets)
+  async function fetchPoolState() {
     if (!connection || !poolPda) return;
     try {
       const accountInfo = await connection.getAccountInfo(poolPda);
-      if (accountInfo && accountInfo.data.length >= 72) {
-        const view = new DataView(accountInfo.data.buffer, accountInfo.data.byteOffset, accountInfo.data.byteLength);
-        poolData.totalDeposit = Number(view.getBigUint64(40, true));
-        poolData.currentRound = Number(view.getBigUint64(48, true));
-        poolData.accumulatedPrizes = Number(view.getBigUint64(56, true));
+      if (accountInfo && accountInfo.data && accountInfo.data.length >= 120) {
         poolData.isInitialized = true;
+        const data = accountInfo.data;
+        // Offsets in Anchor Pool account:
+        // 8 (disc) + 32*4 (admin, operator, vault, prize_vault) = 136 bytes
+        // total_deposit: u64 at 136
+        // active_deposit: u64 at 144
+        // current_round: u64 at 152
+        // round_start_time: i64 at 160
+        // round_duration: i64 at 168
+        // accumulated_prizes: u64 at 176
+        poolData.totalDeposit = readUint64LE(data, 8 + 32 * 4);
+        poolData.currentRound = Math.floor(readUint64LE(data, 8 + 32 * 4 + 8 * 2) * 1e9);
+        poolData.accumulatedPrizes = readUint64LE(data, 8 + 32 * 4 + 8 * 5);
       }
       renderStats();
     } catch (e) {
       console.warn("Error fetching on-chain pool data:", e);
+    }
+
+    if (currentPubkey && poolPda) {
+      await fetchUserData();
     }
   }
 
@@ -104,24 +146,31 @@
       const balEl = document.getElementById('p2-user-wallet-bal');
       if (balEl) balEl.textContent = walletSolBalance.toFixed(4) + ' SOL';
 
-      // 2. User Deposit PDA
-      userDepositPda = window.solanaWeb3.PublicKey.findProgramAddressSync(
-        [SEEDS.USER_DEPOSIT, currentPubkey.toBuffer()],
+      // 2. User Deposit PDA: seeds = [b"user-deposit", pool.key().as_ref(), user.key().as_ref()]
+      const { PublicKey } = window.solanaWeb3;
+      [userDepositPda] = PublicKey.findProgramAddressSync(
+        [SEEDS.USER_DEPOSIT, poolPda.toBuffer(), currentPubkey.toBuffer()],
         programId
-      )[0];
+      );
 
-      const acc = await connection.getAccountInfo(userDepositPda);
-      if (acc && acc.data.length >= 72) {
-        const view = new DataView(acc.data.buffer, acc.data.byteOffset, acc.data.byteLength);
-        userDepositData.amount = Number(view.getBigUint64(40, true));
-        userDepositData.effectiveAmount = Number(view.getBigUint64(48, true));
-        userDepositData.unclaimedPrizes = Number(view.getBigUint64(64, true));
+      const userInfo = await connection.getAccountInfo(userDepositPda);
+      if (userInfo && userInfo.data && userInfo.data.length >= 80) {
         userDepositData.hasAccount = true;
+        // UserDeposit layout:
+        // 8 (disc) + 32*2 (pool, user) = 72 bytes
+        // amount: u64 at 72
+        // effective_amount: u64 at 80
+        // deposit_round: u64 at 88
+        // last_claimed_round: u64 at 96
+        // unclaimed_prizes: u64 at 104
+        userDepositData.amount = readUint64LE(userInfo.data, 8 + 32 * 2);
+        userDepositData.effectiveAmount = readUint64LE(userInfo.data, 8 + 32 * 2 + 8);
+        userDepositData.unclaimedPrizes = readUint64LE(userInfo.data, 8 + 32 * 2 + 8 * 4);
       } else {
+        userDepositData.hasAccount = false;
         userDepositData.amount = 0;
         userDepositData.effectiveAmount = 0;
         userDepositData.unclaimedPrizes = 0;
-        userDepositData.hasAccount = false;
       }
     } catch (e) {
       console.warn("Error fetching user data:", e);
@@ -136,9 +185,9 @@
     const roundEl = document.getElementById('stat-round');
     const prizeCryptoEl = document.getElementById('stat-prize-crypto');
 
-    if (tvlEl) tvlEl.textContent = (poolData.totalDeposit / 1e9).toFixed(3) + ' SOL';
-    if (roundEl) roundEl.textContent = 'Round #' + poolData.currentRound;
-    if (prizeCryptoEl) prizeCryptoEl.textContent = (poolData.accumulatedPrizes / 1e9).toFixed(3) + ' SOL';
+    if (tvlEl) tvlEl.textContent = poolData.totalDeposit.toFixed(3) + ' SOL';
+    if (roundEl) roundEl.textContent = 'Round #' + (poolData.currentRound || 1);
+    if (prizeCryptoEl) prizeCryptoEl.textContent = poolData.accumulatedPrizes.toFixed(3) + ' SOL';
   }
 
   // Render User Position
@@ -149,8 +198,7 @@
     const unclaimedEl = document.getElementById('p2-pos-unclaimed');
     const claimBtn = document.getElementById('p2-claim-btn');
 
-    const principalSol = userDepositData.amount / 1e9;
-    if (principalEl) principalEl.textContent = principalSol.toFixed(3) + ' SOL';
+    if (principalEl) principalEl.textContent = userDepositData.amount.toFixed(3) + ' SOL';
 
     // Calculate Winning Odds
     let odds = 0;
@@ -161,10 +209,9 @@
     if (oddsFillEl) oddsFillEl.style.width = odds.toFixed(1) + '%';
 
     // Unclaimed Prizes
-    const unclaimedSol = userDepositData.unclaimedPrizes / 1e9;
-    if (unclaimedEl) unclaimedEl.textContent = unclaimedSol.toFixed(3) + ' SOL';
+    if (unclaimedEl) unclaimedEl.textContent = userDepositData.unclaimedPrizes.toFixed(3) + ' SOL';
     if (claimBtn) {
-      claimBtn.disabled = unclaimedSol <= 0;
+      claimBtn.disabled = userDepositData.unclaimedPrizes <= 0;
     }
   }
 
@@ -184,9 +231,9 @@
     const lang = (window.P2_I18N && window.P2_I18N.currentLang) || 'en';
 
     if (activeTab === 'deposit') {
-      const newTotal = (userDepositData.amount / 1e9) + val;
-      const newPool = (poolData.totalDeposit / 1e9) + val;
-      const newOdds = Math.min(100, (newTotal / newPool) * 100).toFixed(1);
+      const newTotal = userDepositData.amount + val;
+      const newPool = poolData.totalDeposit + val;
+      const newOdds = Math.min(100, (newTotal / (newPool || 1)) * 100).toFixed(1);
 
       if (lang === 'zh') {
         previewEl.innerHTML = `💡 存入 <b>${val} SOL</b> 後，總本金將為 <b>${newTotal.toFixed(3)} SOL</b>（預估中獎率約 <b>${newOdds}%</b>）`;
@@ -194,7 +241,7 @@
         previewEl.innerHTML = `💡 Depositing <b>${val} SOL</b> brings principal to <b>${newTotal.toFixed(3)} SOL</b> (~<b>${newOdds}%</b> winning odds)`;
       }
     } else {
-      const remaining = Math.max(0, (userDepositData.amount / 1e9) - val);
+      const remaining = Math.max(0, userDepositData.amount - val);
       if (lang === 'zh') {
         previewEl.innerHTML = `💡 提取 <b>${val} SOL</b> 後，剩餘存款 <b>${remaining.toFixed(3)} SOL</b>（本金 100% 取回）`;
       } else {
@@ -275,7 +322,7 @@
 
       updateWalletUI();
       await fetchUserData();
-      await fetchPoolOnChain();
+      await fetchPoolState();
       showToast("Wallet connected: " + currentPubkey.toBase58().slice(0, 4) + '...' + currentPubkey.toBase58().slice(-4), "success");
     } catch (err) {
       console.error("Wallet connect error:", err);
@@ -355,43 +402,47 @@
     }
 
     const lamports = Math.floor(amountSol * 1e9);
+    const { Transaction, TransactionInstruction, SystemProgram, PublicKey } = window.solanaWeb3;
 
     try {
       showToast("Preparing deposit transaction...", "info");
-      const data = new Uint8Array(16);
-      data.set(DISCRIMINATORS.deposit, 0);
-      const view = new DataView(data.buffer);
-      view.setBigUint64(8, BigInt(lamports), true);
 
+      // Ensure userDepositPda is derived with correct seeds
+      [userDepositPda] = PublicKey.findProgramAddressSync(
+        [SEEDS.USER_DEPOSIT, poolPda.toBuffer(), currentPubkey.toBuffer()],
+        programId
+      );
+
+      const data = new Uint8Array(8 + 8);
+      data.set(DISCRIMINATORS.deposit, 0);
+      data.set(encodeUint64LE(lamports), 8);
+
+      // Anchor instruction: deposit(ctx, amount)
+      // accounts: pool, user_deposit, vault, user, system_program
       const keys = [
         { pubkey: poolPda, isSigner: false, isWritable: true },
-        { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: userDepositPda, isSigner: false, isWritable: true },
+        { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: currentPubkey, isSigner: true, isWritable: true },
-        { pubkey: window.solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
       ];
 
-      const ix = new window.solanaWeb3.TransactionInstruction({
-        programId,
-        keys,
-        data
-      });
-
-      const tx = new window.solanaWeb3.Transaction().add(ix);
+      const ix = new TransactionInstruction({ programId, keys, data });
+      const tx = new Transaction().add(ix);
       tx.feePayer = currentPubkey;
-      const { blockhash } = await connection.getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
       const signedTx = await currentWallet.signTransaction(tx);
       const sig = await connection.sendRawTransaction(signedTx.serialize());
-      showToast(`Transaction sent! Waiting confirmation... (Sig: ${sig.slice(0, 8)}...)`, "info");
+      showToast(`Deposit submitted! Tx: ${sig.slice(0, 8)}...`, "info");
 
       await connection.confirmTransaction(sig, "confirmed");
       showToast(`🎉 Successfully deposited ${amountSol} SOL! 100% safe.`, "success");
 
       input.value = '';
       await fetchUserData();
-      await fetchPoolOnChain();
+      await fetchPoolState();
     } catch (err) {
       console.error("Deposit error:", err);
       showToast("Deposit error: " + (err.message || err), "error");
@@ -406,50 +457,53 @@
     }
 
     const input = document.getElementById('p2-amount-input');
-    const amountSol = parseFloat(input.value);
+    const amountSol = parseFloat(input.value) || userDepositData.amount;
     if (!amountSol || amountSol <= 0) {
       showToast("Please enter a valid amount to withdraw.", "error");
       return;
     }
 
     const lamports = Math.floor(amountSol * 1e9);
+    const { Transaction, TransactionInstruction, SystemProgram, PublicKey } = window.solanaWeb3;
 
     try {
       showToast("Preparing withdraw transaction...", "info");
-      const data = new Uint8Array(16);
-      data.set(DISCRIMINATORS.withdraw, 0);
-      const view = new DataView(data.buffer);
-      view.setBigUint64(8, BigInt(lamports), true);
 
+      [userDepositPda] = PublicKey.findProgramAddressSync(
+        [SEEDS.USER_DEPOSIT, poolPda.toBuffer(), currentPubkey.toBuffer()],
+        programId
+      );
+
+      const data = new Uint8Array(8 + 8);
+      data.set(DISCRIMINATORS.withdraw, 0);
+      data.set(encodeUint64LE(lamports), 8);
+
+      // Anchor instruction: withdraw(ctx, amount)
+      // accounts: pool, user_deposit, vault, user, system_program
       const keys = [
         { pubkey: poolPda, isSigner: false, isWritable: true },
-        { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: userDepositPda, isSigner: false, isWritable: true },
+        { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: currentPubkey, isSigner: true, isWritable: true },
-        { pubkey: window.solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
       ];
 
-      const ix = new window.solanaWeb3.TransactionInstruction({
-        programId,
-        keys,
-        data
-      });
-
-      const tx = new window.solanaWeb3.Transaction().add(ix);
+      const ix = new TransactionInstruction({ programId, keys, data });
+      const tx = new Transaction().add(ix);
       tx.feePayer = currentPubkey;
-      const { blockhash } = await connection.getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
       const signedTx = await currentWallet.signTransaction(tx);
       const sig = await connection.sendRawTransaction(signedTx.serialize());
-      showToast(`Transaction sent! Waiting confirmation... (Sig: ${sig.slice(0, 8)}...)`, "info");
+      showToast(`Withdrawal submitted! Tx: ${sig.slice(0, 8)}...`, "info");
 
       await connection.confirmTransaction(sig, "confirmed");
       showToast(`🎉 Successfully retrieved ${amountSol} SOL! Zero fees applied.`, "success");
 
       input.value = '';
       await fetchUserData();
-      await fetchPoolOnChain();
+      await fetchPoolState();
     } catch (err) {
       console.error("Withdraw error:", err);
       showToast("Withdraw error: " + (err.message || err), "error");
@@ -463,26 +517,29 @@
       return;
     }
 
+    const { Transaction, TransactionInstruction, SystemProgram, PublicKey } = window.solanaWeb3;
+
     try {
       showToast("Claiming prize...", "info");
+
+      [userDepositPda] = PublicKey.findProgramAddressSync(
+        [SEEDS.USER_DEPOSIT, poolPda.toBuffer(), currentPubkey.toBuffer()],
+        programId
+      );
+
       const data = DISCRIMINATORS.claim_prize;
       const keys = [
         { pubkey: poolPda, isSigner: false, isWritable: true },
         { pubkey: prizeVaultPda, isSigner: false, isWritable: true },
         { pubkey: userDepositPda, isSigner: false, isWritable: true },
         { pubkey: currentPubkey, isSigner: true, isWritable: true },
-        { pubkey: window.solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
       ];
 
-      const ix = new window.solanaWeb3.TransactionInstruction({
-        programId,
-        keys,
-        data
-      });
-
-      const tx = new window.solanaWeb3.Transaction().add(ix);
+      const ix = new TransactionInstruction({ programId, keys, data });
+      const tx = new Transaction().add(ix);
       tx.feePayer = currentPubkey;
-      const { blockhash } = await connection.getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
       const signedTx = await currentWallet.signTransaction(tx);
@@ -491,7 +548,7 @@
       showToast("🎉 Prize claimed successfully to your wallet!", "success");
 
       await fetchUserData();
-      await fetchPoolOnChain();
+      await fetchPoolState();
     } catch (err) {
       console.error("Claim error:", err);
       showToast("Claim error: " + (err.message || err), "error");
@@ -501,30 +558,39 @@
   // Devnet Tool: Simulate Yield (+0.05 SOL to Prize Pool)
   async function handleSimulateYield() {
     if (!currentPubkey || !currentWallet) {
+      showToast("Connect wallet first", "error");
       openWalletModal();
       return;
     }
 
+    const { Transaction, TransactionInstruction, SystemProgram } = window.solanaWeb3;
+    const lamports = 50000000; // 0.05 SOL
+
     try {
-      showToast("Simulating 0.05 SOL yield transfer...", "info");
-      const lamports = 50000000; // 0.05 SOL
-      const tx = new window.solanaWeb3.Transaction().add(
-        window.solanaWeb3.SystemProgram.transfer({
-          fromPubkey: currentPubkey,
-          toPubkey: prizeVaultPda,
-          lamports
-        })
-      );
+      showToast("Injecting 0.05 SOL yield into prize pool...", "info");
+      const data = new Uint8Array(8 + 8);
+      data.set(DISCRIMINATORS.fund_prize, 0);
+      data.set(encodeUint64LE(lamports), 8);
+
+      const keys = [
+        { pubkey: poolPda, isSigner: false, isWritable: true },
+        { pubkey: prizeVaultPda, isSigner: false, isWritable: true },
+        { pubkey: currentPubkey, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
+      ];
+
+      const ix = new TransactionInstruction({ programId, keys, data });
+      const tx = new Transaction().add(ix);
       tx.feePayer = currentPubkey;
-      const { blockhash } = await connection.getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
       const signedTx = await currentWallet.signTransaction(tx);
       const sig = await connection.sendRawTransaction(signedTx.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
-      showToast("💧 Added +0.05 SOL simulated yield to Prize Vault!", "success");
-      await fetchPoolOnChain();
+      showToast("💧 Simulated 0.05 SOL yield funded into prize pool!", "success");
+      await fetchPoolState();
     } catch (err) {
       console.error("Simulate yield error:", err);
       showToast("Simulate yield error: " + (err.message || err), "error");
@@ -534,48 +600,58 @@
   // Devnet Tool: Trigger VRF Draw
   async function handleTriggerDraw() {
     if (!currentPubkey || !currentWallet) {
+      showToast("Connect wallet first", "error");
       openWalletModal();
       return;
     }
 
+    const { Transaction, TransactionInstruction, SystemProgram, PublicKey } = window.solanaWeb3;
+
     try {
-      showToast("Triggering VRF Random Draw...", "info");
-      const roundDrawPda = window.solanaWeb3.PublicKey.findProgramAddressSync(
-        [new TextEncoder().encode("round-draw"), new Uint8Array(new BigUint64Array([BigInt(poolData.currentRound)]).buffer)],
+      showToast("Rolling 1+1 VRF dice on Solana...", "info");
+
+      [userDepositPda] = PublicKey.findProgramAddressSync(
+        [SEEDS.USER_DEPOSIT, poolPda.toBuffer(), currentPubkey.toBuffer()],
         programId
-      )[0];
+      );
 
-      const charityWallet = new window.solanaWeb3.PublicKey("11111111111111111111111111111111");
+      const randomness = crypto.getRandomValues(new Uint8Array(32));
+      const memo = new TextEncoder().encode("POWER2_INFT_GENESIS_AWARD_#1____");
 
-      const data = DISCRIMINATORS.draw_round;
+      const data = new Uint8Array(8 + 32 + 32);
+      data.set(DISCRIMINATORS.draw_round, 0);
+      data.set(randomness, 8);
+      data.set(memo, 40);
+
+      const roundBytes = encodeUint64LE(poolData.currentRound);
+      const [roundDrawPda] = PublicKey.findProgramAddressSync(
+        [SEEDS.ROUND_DRAW, poolPda.toBuffer(), roundBytes],
+        programId
+      );
+
       const keys = [
         { pubkey: poolPda, isSigner: false, isWritable: true },
-        { pubkey: prizeVaultPda, isSigner: false, isWritable: true },
         { pubkey: roundDrawPda, isSigner: false, isWritable: true },
-        { pubkey: currentPubkey, isSigner: false, isWritable: true }, // Winner account
+        { pubkey: prizeVaultPda, isSigner: false, isWritable: true },
         { pubkey: userDepositPda, isSigner: false, isWritable: true },
-        { pubkey: charityWallet, isSigner: false, isWritable: true },
-        { pubkey: currentPubkey, isSigner: true, isWritable: true }, // Operator
-        { pubkey: window.solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false }
+        { pubkey: currentPubkey, isSigner: false, isWritable: false },
+        { pubkey: currentPubkey, isSigner: false, isWritable: true },
+        { pubkey: currentPubkey, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
       ];
 
-      const ix = new window.solanaWeb3.TransactionInstruction({
-        programId,
-        keys,
-        data
-      });
-
-      const tx = new window.solanaWeb3.Transaction().add(ix);
+      const ix = new TransactionInstruction({ programId, keys, data });
+      const tx = new Transaction().add(ix);
       tx.feePayer = currentPubkey;
-      const { blockhash } = await connection.getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
       const signedTx = await currentWallet.signTransaction(tx);
       const sig = await connection.sendRawTransaction(signedTx.serialize());
       await connection.confirmTransaction(sig, "confirmed");
 
-      showToast("🎲 VRF Round Draw executed! Round has advanced.", "success");
-      await fetchPoolOnChain();
+      showToast(`🎉 Round #${poolData.currentRound} Drawn! 1+1 Prizes Awarded!`, "success");
+      await fetchPoolState();
       await fetchUserData();
     } catch (err) {
       console.error("Trigger draw error:", err);
@@ -601,7 +677,7 @@
           if (activeTab === 'deposit') {
             input.value = Math.max(0, walletSolBalance - 0.005).toFixed(3);
           } else {
-            input.value = (userDepositData.amount / 1e9).toFixed(3);
+            input.value = userDepositData.amount.toFixed(3);
           }
         } else {
           input.value = val;

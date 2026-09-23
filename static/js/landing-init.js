@@ -1,7 +1,7 @@
 /**
  * POWER2 Landing Page Initializer
  * Injects Language Switcher and "Use Power2" CTA button slightly below the top navbar.
- * Provides live translation of navbar links and hero text.
+ * Safe, non-blocking translation without recursive MutationObservers.
  */
 (function() {
   'use strict';
@@ -31,11 +31,11 @@
 
   function translateNavItems(lang) {
     var map = NAV_MAP[lang] || NAV_MAP.en;
-    var links = document.querySelectorAll('li, a, button, span');
+    var links = document.querySelectorAll('li, a');
     links.forEach(function(el) {
       if (el.children.length === 0) {
         var text = (el.textContent || '').trim();
-        if (map[text]) {
+        if (map[text] && map[text] !== text) {
           el.textContent = map[text];
         }
       }
@@ -55,13 +55,15 @@
     bar.id = 'p2-landing-actions';
 
     var currentLang = (window.P2_I18N && window.P2_I18N.currentLang) || localStorage.getItem('p2_lang') || 'en';
+    var isSubpath = window.location.pathname.startsWith('/p-2');
+    var appUrl = isSubpath ? '/p-2/app/' : './app/';
 
     bar.innerHTML = `
       <div class="p2-lang-switch">
-        <button class="p2-lang-btn ${currentLang === 'en' ? 'active' : ''}" data-lang="en">EN</button>
-        <button class="p2-lang-btn ${currentLang === 'zh' ? 'active' : ''}" data-lang="zh">繁中</button>
+        <button type="button" class="p2-lang-btn ${currentLang === 'en' ? 'active' : ''}" data-lang="en">EN</button>
+        <button type="button" class="p2-lang-btn ${currentLang === 'zh' ? 'active' : ''}" data-lang="zh">繁中</button>
       </div>
-      <a href="./app/" class="p2-use-app-btn" id="p2-launch-btn">
+      <a href="${appUrl}" class="p2-use-app-btn" id="p2-launch-btn">
         <span class="p2-pulse-dot" style="background:#00F5A0; width:8px; height:8px; border-radius:50%; box-shadow:0 0 8px #00F5A0;"></span>
         <span id="p2-cta-label">${currentLang === 'zh' ? '進入 Power2' : 'Use Power2'}</span>
         <span class="arrow">→</span>
@@ -72,7 +74,9 @@
 
     // Event listeners for lang switch
     bar.querySelectorAll('.p2-lang-btn').forEach(function(btn) {
-      btn.onclick = function() {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         var lang = this.getAttribute('data-lang');
         bar.querySelectorAll('.p2-lang-btn').forEach(function(b) {
           b.classList.toggle('active', b.getAttribute('data-lang') === lang);
@@ -81,20 +85,16 @@
           window.P2_I18N.setLang(lang);
         }
         translateNavItems(lang);
-      };
+      });
     });
 
-    // Observer to re-translate if React re-renders navbar
-    var observer = new MutationObserver(function() {
-      var lang = (window.P2_I18N && window.P2_I18N.currentLang) || localStorage.getItem('p2_lang') || 'en';
-      translateNavItems(lang);
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    // Initial translation
+    // Translate once after React finishes rendering
     setTimeout(function() {
       translateNavItems(currentLang);
-    }, 500);
+    }, 1000);
+    setTimeout(function() {
+      translateNavItems(currentLang);
+    }, 2500);
   }
 
   if (document.readyState === 'loading') {
