@@ -1,7 +1,7 @@
 /* POWER2 Solana dApp Stylesheet */
 :root {
   --p2-bg: rgba(13, 17, 23, 0.85);
-  --p2-card: rgba(22, 27, 34, 0.88);
+  --p2-card: rgba(22, 27, 34, 0.92);
   --p2-border: rgba(255, 255, 255, 0.12);
   --p2-border-hover: rgba(121, 40, 202, 0.6);
   --p2-text: #FFFFFF;
@@ -172,6 +172,82 @@
   padding: 24px;
   max-height: 80vh;
   overflow-y: auto;
+}
+
+/* Wallet Selection Card */
+.p2-wallet-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--p2-border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.p2-wallet-select-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.p2-wallet-opt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--p2-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.p2-wallet-opt-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--p2-cyan);
+  transform: translateY(-1px);
+}
+
+.p2-wallet-opt-btn.phantom:hover {
+  border-color: #AB9FF2;
+  box-shadow: 0 0 15px rgba(171, 159, 242, 0.3);
+}
+
+.p2-wallet-opt-btn.solflare:hover {
+  border-color: #FC7227;
+  box-shadow: 0 0 15px rgba(252, 114, 39, 0.3);
+}
+
+.p2-connected-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 245, 160, 0.08);
+  border: 1px solid rgba(0, 245, 160, 0.25);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+}
+
+.p2-disconnect-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--p2-border);
+  color: var(--p2-text-dim);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.p2-disconnect-btn:hover {
+  background: rgba(255, 77, 77, 0.2);
+  color: #FF4D4D;
+  border-color: #FF4D4D;
 }
 
 /* Stats Grid */

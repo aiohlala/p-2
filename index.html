@@ -2,26 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <link rel="icon" href="/favicon.png"/>
+  <link rel="icon" href="./favicon.png"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <meta name="theme-color" content="#000000"/>
   <meta name="description" content="POWER2 - Free to play no-loss dual-lottos on Solana"/>
-  <link rel="apple-touch-icon" href="/logo192.png"/>
-  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="./logo192.png"/>
+  <link rel="manifest" href="./manifest.json"/>
   <title>POWER2 | No-Loss Dual-Lottos on Solana</title>
   
+  <script>
+    // Universal Path Resolver: seamlessly supports GitHub Pages subpath (/p-2/) and root domain (Cloudflare/Firebase)
+    (function() {
+      var isSubpath = window.location.pathname.startsWith('/p-2');
+      var prefix = isSubpath ? '/p-2' : '';
+      window.__webpack_public_path__ = isSubpath ? '/p-2/' : '/';
+      if (prefix) {
+        var origFetch = window.fetch;
+        if (origFetch) {
+          window.fetch = function(url, init) {
+            if (typeof url === 'string') {
+              if (url.startsWith('/assets/') || url.startsWith('/static/')) {
+                url = prefix + url;
+              }
+            }
+            return origFetch.call(this, url, init);
+          };
+        }
+        var origOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+          var args = Array.prototype.slice.call(arguments);
+          if (typeof url === 'string') {
+            if (url.startsWith('/assets/') || url.startsWith('/static/')) {
+              args[1] = prefix + url;
+            }
+          }
+          return origOpen.apply(this, args);
+        };
+      }
+    })();
+  </script>
+
   <!-- Original Styles & dApp Styles -->
-  <link href="/static/css/main.1707a6ef.css" rel="stylesheet">
-  <link href="/static/css/dapp-adapter.css" rel="stylesheet">
+  <link href="./static/css/main.1707a6ef.css" rel="stylesheet">
+  <link href="./static/css/dapp-adapter.css" rel="stylesheet">
   
   <!-- Solana Web3 Library -->
-  <script src="/static/js/solana-web3.min.js"></script>
+  <script src="./static/js/solana-web3.min.js"></script>
   
   <!-- Original 3D Bundle -->
-  <script defer="defer" src="/static/js/main.46527fe2.js"></script>
+  <script defer="defer" src="./static/js/main.46527fe2.js"></script>
   
   <!-- POWER2 Web3 dApp Controller -->
-  <script defer="defer" src="/static/js/dapp-adapter.js"></script>
+  <script defer="defer" src="./static/js/dapp-adapter.js"></script>
 </head>
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>

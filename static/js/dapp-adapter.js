@@ -1,7 +1,7 @@
 /**
  * POWER2 Solana Web3 dApp Adapter
- * Provides seamless wallet connection, on-chain state inspection, and transaction execution
- * for the No-Loss Dual-Lotto Protocol.
+ * Provides seamless wallet connection (Phantom, Solflare, Standard), 
+ * on-chain state inspection, and transaction execution for the No-Loss Dual-Lotto Protocol.
  */
 (function() {
   'use strict';
@@ -71,6 +71,9 @@
     buildUI();
     fetchPoolState();
     setInterval(fetchPoolState, 10000);
+
+    // Try silent eager connect if already authorized
+    tryEagerConnect();
   }
 
   // Parse 64-bit Little Endian
@@ -153,6 +156,33 @@
           <button class="p2-close-btn" id="p2-close">&times;</button>
         </div>
         <div class="p2-card-body">
+          
+          <!-- Wallet Selection / Connected Status -->
+          <div id="p2-wallet-select-area" class="p2-wallet-section">
+            <span class="p2-stat-label">Select Solana Wallet to Connect:</span>
+            <div class="p2-wallet-select-grid">
+              <button class="p2-wallet-opt-btn phantom" id="p2-conn-phantom">
+                <span style="font-size: 18px;">🟣</span> Phantom
+              </button>
+              <button class="p2-wallet-opt-btn solflare" id="p2-conn-solflare">
+                <span style="font-size: 18px;">🟠</span> Solflare
+              </button>
+            </div>
+            <button class="p2-wallet-opt-btn" id="p2-conn-auto" style="width: 100%; margin-top: 8px;">
+              <span style="font-size: 16px;">⚡</span> Auto-Detect Default Wallet
+            </button>
+          </div>
+
+          <div id="p2-wallet-connected-area" class="p2-connected-bar" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="dot"></span>
+              <span style="font-weight: 700; font-size: 13px;" id="p2-connected-address">Not Connected</span>
+              <span style="font-size: 10px; background: rgba(0, 242, 254, 0.2); color: var(--p2-cyan); padding: 2px 6px; border-radius: 4px; font-weight: 700;">DEVNET</span>
+            </div>
+            <button class="p2-disconnect-btn" id="p2-disconnect">Disconnect</button>
+          </div>
+
+          <!-- Pool Stats Grid -->
           <div class="p2-stats-grid">
             <div class="p2-stat-box">
               <span class="p2-stat-label">Total Pool TVL</span>
@@ -168,10 +198,11 @@
             </div>
             <div class="p2-stat-box highlight">
               <span class="p2-stat-label">1+1 Bonus Prize</span>
-              <span class="p2-stat-val" style="font-size: 16px; color: var(--p2-cyan); padding-top: 4px;">Exclusive iNFT 🎨</span>
+              <span class="p2-stat-val" style="font-size: 15px; color: var(--p2-cyan); padding-top: 4px;">Exclusive iNFT 🎨</span>
             </div>
           </div>
 
+          <!-- User Deposit Status Box -->
           <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--p2-border); border-radius: 16px; padding: 16px; margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <span class="p2-stat-label">My Deposited Principal</span>
@@ -186,9 +217,10 @@
             </div>
           </div>
 
+          <!-- Action Inputs -->
           <div class="p2-action-group">
             <div class="p2-input-wrap">
-              <input type="number" step="0.05" min="0.01" class="p2-input" id="p2-amount-input" placeholder="Amount (e.g. 0.1)" />
+              <input type="number" step="0.05" min="0.01" class="p2-input" id="p2-amount-input" placeholder="Amount (e.g. 0.05)" />
               <span class="p2-input-token">SOL</span>
             </div>
             <div class="p2-btn-row">
@@ -213,7 +245,7 @@
             </div>
             <div class="p2-devnet-row">
               <button class="p2-devnet-btn" id="p2-init-pool-btn" style="display: none;">⚙️ Init Pool</button>
-              <button class="p2-devnet-btn" id="p2-yield-btn">💧 Simulate Yield (+0.1 SOL)</button>
+              <button class="p2-devnet-btn" id="p2-yield-btn">💧 Simulate Yield (+0.05 SOL)</button>
               <button class="p2-devnet-btn" id="p2-draw-btn">🎲 Trigger Draw (VRF)</button>
             </div>
           </div>
@@ -226,6 +258,12 @@
     document.getElementById("p2-close").onclick = closeModal;
     modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 
+    // Wallet connect buttons
+    document.getElementById("p2-conn-phantom").onclick = () => connectWallet('phantom');
+    document.getElementById("p2-conn-solflare").onclick = () => connectWallet('solflare');
+    document.getElementById("p2-conn-auto").onclick = () => connectWallet('auto');
+    document.getElementById("p2-disconnect").onclick = disconnectWallet;
+
     document.getElementById("p2-deposit-btn").onclick = handleDeposit;
     document.getElementById("p2-withdraw-btn").onclick = handleWithdraw;
     document.getElementById("p2-claim-btn").onclick = handleClaimPrize;
@@ -233,7 +271,6 @@
     document.getElementById("p2-yield-btn").onclick = handleSimulateYield;
     document.getElementById("p2-draw-btn").onclick = handleTriggerDraw;
 
-    // Insert Header Connect Button once DOM is fully populated
     injectHeaderButton();
   }
 
@@ -243,20 +280,17 @@
       headerBtn = document.createElement("button");
       headerBtn.className = "p2-wallet-btn";
       headerBtn.id = "p2-header-btn";
-      headerBtn.innerHTML = `<span class="dot"></span> <span>Connect Wallet</span>`;
+      headerBtn.innerHTML = `<span class="dot" style="background: #FF0080;"></span> <span>Connect Wallet</span>`;
       headerBtn.style.position = "fixed";
       headerBtn.style.top = "18px";
       headerBtn.style.right = "24px";
-      headerBtn.onclick = handleWalletToggle;
+      headerBtn.onclick = openModal;
       document.body.appendChild(headerBtn);
     }
   }
 
   function openModal() {
     document.getElementById("p2-modal").classList.add("active");
-    if (!currentPubkey) {
-      connectWallet();
-    }
   }
 
   function closeModal() {
@@ -289,6 +323,9 @@
     const claimBtn = document.getElementById("p2-claim-btn");
     const claimAmountEl = document.getElementById("p2-claim-amount");
     const initBtn = document.getElementById("p2-init-pool-btn");
+    const walletSelectArea = document.getElementById("p2-wallet-select-area");
+    const walletConnectedArea = document.getElementById("p2-wallet-connected-area");
+    const connectedAddressEl = document.getElementById("p2-connected-address");
 
     if (tvlEl) tvlEl.textContent = `${poolData.totalDeposit.toFixed(3)} SOL`;
     if (roundEl) roundEl.textContent = `Round #${poolData.currentRound}`;
@@ -321,44 +358,104 @@
       initBtn.style.display = poolData.isInitialized ? "none" : "inline-block";
     }
 
-    // Header Button Update
-    const headerBtn = document.getElementById("p2-header-btn");
-    if (headerBtn) {
-      if (currentPubkey) {
-        const addr = currentPubkey.toBase58();
-        const shortAddr = `${addr.slice(0, 4)}...${addr.slice(-4)}`;
-        headerBtn.innerHTML = `<span class="dot"></span> <span>${shortAddr}</span>`;
-      } else {
-        headerBtn.innerHTML = `<span class="dot"></span> <span>Connect Wallet</span>`;
+    // Wallet Section Toggle
+    if (currentPubkey) {
+      if (walletSelectArea) walletSelectArea.style.display = "none";
+      if (walletConnectedArea) walletConnectedArea.style.display = "flex";
+      const addr = currentPubkey.toBase58();
+      const shortAddr = `${addr.slice(0, 4)}...${addr.slice(-4)}`;
+      if (connectedAddressEl) connectedAddressEl.textContent = shortAddr;
+
+      // Header Button Update
+      const headerBtn = document.getElementById("p2-header-btn");
+      if (headerBtn) {
+        headerBtn.innerHTML = `<span class="dot" style="background: #00F5A0;"></span> <span>${shortAddr}</span>`;
+      }
+    } else {
+      if (walletSelectArea) walletSelectArea.style.display = "block";
+      if (walletConnectedArea) walletConnectedArea.style.display = "none";
+      const headerBtn = document.getElementById("p2-header-btn");
+      if (headerBtn) {
+        headerBtn.innerHTML = `<span class="dot" style="background: #FF0080;"></span> <span>Connect Wallet</span>`;
       }
     }
   }
 
+  // Get specific wallet provider
+  function getWalletProvider(type) {
+    if (type === 'phantom') {
+      if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+      if (window.solana?.isPhantom) return window.solana;
+      return null;
+    }
+    if (type === 'solflare') {
+      if (window.solflare?.isSolflare) return window.solflare;
+      if (window.solflare) return window.solflare;
+      if (window.solana?.isSolflare) return window.solana;
+      return null;
+    }
+    // Auto-detect
+    return window.phantom?.solana || window.solflare || window.solana || null;
+  }
+
   // Wallet Connection
-  async function connectWallet() {
-    const provider = window.phantom?.solana || window.solana;
+  async function connectWallet(type = 'auto') {
+    const provider = getWalletProvider(type);
     if (!provider) {
-      showToast("Please install Phantom or Solflare wallet!", "error");
-      window.open("https://phantom.app/", "_blank");
+      const name = type === 'phantom' ? 'Phantom' : type === 'solflare' ? 'Solflare' : 'Solana';
+      showToast(`${name} extension not found! Please install it.`, "error");
+      const url = type === 'solflare' ? "https://solflare.com/" : "https://phantom.app/";
+      window.open(url, "_blank");
       return;
     }
+
     try {
+      showToast(`Connecting to wallet...`);
+      // User-initiated connect
       const resp = await provider.connect();
-      currentPubkey = resp.publicKey;
+      currentPubkey = resp.publicKey || provider.publicKey;
       currentWallet = provider;
-      showToast(`Connected: ${currentPubkey.toBase58().slice(0, 6)}...`);
+      const addr = currentPubkey.toBase58();
+      showToast(`Connected: ${addr.slice(0, 4)}...${addr.slice(-4)}`);
       fetchPoolState();
     } catch (err) {
-      console.error("Wallet connect error:", err);
-      showToast("Wallet connection rejected", "error");
+      console.error("Wallet connection error details:", err);
+      if (err.code === 4001 || err.message?.includes("User rejected")) {
+        showToast("Connection cancelled by user", "error");
+      } else {
+        const hint = window.location.hostname === '127.0.0.1' 
+          ? " (Tip: try http://localhost:8788 if extension blocks 127.0.0.1)"
+          : "";
+        showToast(`Wallet connect failed: ${err.message || "Unknown error"}${hint}`, "error");
+      }
     }
   }
 
-  function handleWalletToggle() {
-    if (!currentPubkey) {
-      connectWallet();
-    } else {
-      openModal();
+  function disconnectWallet() {
+    if (currentWallet && typeof currentWallet.disconnect === 'function') {
+      currentWallet.disconnect().catch(() => {});
+    }
+    currentPubkey = null;
+    currentWallet = null;
+    userDepositData = { amount: 0, effectiveAmount: 0, unclaimedPrizes: 0, hasAccount: false };
+    updateUI();
+    showToast("Wallet disconnected");
+  }
+
+  // Eager connect if previously trusted
+  async function tryEagerConnect() {
+    try {
+      const provider = window.phantom?.solana || window.solflare || window.solana;
+      if (provider && typeof provider.connect === 'function') {
+        const resp = await provider.connect({ onlyIfTrusted: true });
+        if (resp && resp.publicKey) {
+          currentPubkey = resp.publicKey;
+          currentWallet = provider;
+          fetchPoolState();
+        }
+      }
+    } catch (e) {
+      // Normal: Not yet trusted, silent ignore
     }
   }
 
@@ -375,8 +472,9 @@
   // Handle Deposit
   async function handleDeposit() {
     if (!currentPubkey || !currentWallet) {
-      await connectWallet();
-      if (!currentPubkey) return;
+      showToast("Please connect a wallet first (select Phantom or Solflare above)", "error");
+      openModal();
+      return;
     }
 
     const input = document.getElementById("p2-amount-input");
@@ -426,7 +524,8 @@
   // Handle Withdraw
   async function handleWithdraw() {
     if (!currentPubkey || !currentWallet) {
-      await connectWallet();
+      showToast("Please connect your wallet first", "error");
+      openModal();
       return;
     }
 
@@ -509,17 +608,14 @@
 
   // Handle Init Pool (Devnet testing)
   async function handleInitPool() {
-    if (!currentPubkey || !currentWallet) {
-      await connectWallet();
-      return;
-    }
+    if (!currentPubkey || !currentWallet) return;
     const { Transaction, TransactionInstruction, SystemProgram } = window.solanaWeb3;
     try {
       showToast("Initializing Power2 Pool...");
       const data = new Uint8Array(8 + 8 + 32);
       data.set(DISCRIMINATORS.initialize_pool, 0);
       data.set(encodeUint64LE(86400), 8); // 1 day round
-      data.set(currentPubkey.toBuffer(), 16); // charity recipient is creator on devnet
+      data.set(currentPubkey.toBuffer(), 16);
 
       const keys = [
         { pubkey: poolPda, isSigner: false, isWritable: true },
@@ -549,14 +645,14 @@
   // Handle Simulate Yield
   async function handleSimulateYield() {
     if (!currentPubkey || !currentWallet) {
-      await connectWallet();
+      showToast("Connect wallet first", "error");
       return;
     }
     const { Transaction, TransactionInstruction, SystemProgram } = window.solanaWeb3;
-    const lamports = 100000000; // 0.1 SOL
+    const lamports = 50000000; // 0.05 SOL
 
     try {
-      showToast("Injecting 0.1 SOL yield to prize pool...");
+      showToast("Injecting 0.05 SOL yield to prize pool...");
       const data = new Uint8Array(8 + 8);
       data.set(DISCRIMINATORS.fund_prize, 0);
       data.set(encodeUint64LE(lamports), 8);
@@ -588,7 +684,7 @@
   // Handle Trigger Draw (VRF)
   async function handleTriggerDraw() {
     if (!currentPubkey || !currentWallet) {
-      await connectWallet();
+      showToast("Connect wallet first", "error");
       return;
     }
     const { Transaction, TransactionInstruction, SystemProgram, PublicKey } = window.solanaWeb3;
@@ -603,7 +699,6 @@
       data.set(randomness, 8);
       data.set(memo, 40);
 
-      // Derive round draw PDA
       const roundBytes = encodeUint64LE(poolData.currentRound);
       const [roundDrawPda] = PublicKey.findProgramAddressSync(
         [SEEDS.ROUND_DRAW, poolPda.toBuffer(), roundBytes],
@@ -615,9 +710,9 @@
         { pubkey: roundDrawPda, isSigner: false, isWritable: true },
         { pubkey: prizeVaultPda, isSigner: false, isWritable: true },
         { pubkey: userDepositPda, isSigner: false, isWritable: true },
-        { pubkey: currentPubkey, isSigner: false, isWritable: false }, // winner
-        { pubkey: currentPubkey, isSigner: false, isWritable: true }, // charity recipient
-        { pubkey: currentPubkey, isSigner: true, isWritable: true }, // authority
+        { pubkey: currentPubkey, isSigner: false, isWritable: false },
+        { pubkey: currentPubkey, isSigner: false, isWritable: true },
+        { pubkey: currentPubkey, isSigner: true, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
       ];
 
